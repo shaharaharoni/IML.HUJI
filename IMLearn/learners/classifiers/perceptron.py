@@ -2,6 +2,8 @@ from __future__ import annotations
 from typing import Callable
 from typing import NoReturn
 from ...base import BaseEstimator
+from IMLearn.metrics.loss_functions import misclassification_error as mis_err
+
 import numpy as np
 
 
@@ -33,6 +35,7 @@ class Perceptron(BaseEstimator):
         to be filled in `Perceptron.fit` function.
 
     """
+
     def __init__(self,
                  include_intercept: bool = True,
                  max_iter: int = 1000,
@@ -90,7 +93,25 @@ class Perceptron(BaseEstimator):
         -----
         Fits model with or without an intercept depending on value of `self.fit_intercept_`
         """
-        raise NotImplementedError()
+        if not self.coefs_:
+            self.coefs_ = np.zeros(X.shape[1])
+
+        if self.include_intercept_:
+            X = np.insert(X, 0, np.ones(len(X)), axis=1)
+            self.coefs_ = np.zeros(X.shape[1])
+
+        for i in range(self.max_iter_):
+            y_pred = self._predict(X)
+            if not mis_err(y, y_pred):
+                break
+            ind = self.find_misclassified_sample(y, y_pred)
+            self.coefs_ = self.coefs_ + (y[ind] * X[ind])
+            self.callback_(self, X[ind], y[ind])
+
+    def find_misclassified_sample(self, y, y_pred):
+        for i in range(len(y)):
+            if y[i] * y_pred[i] <= 0:
+                return i
 
     def _predict(self, X: np.ndarray) -> np.ndarray:
         """
@@ -106,7 +127,7 @@ class Perceptron(BaseEstimator):
         responses : ndarray of shape (n_samples, )
             Predicted responses of given samples
         """
-        raise NotImplementedError()
+        return X @ self.coefs_
 
     def _loss(self, X: np.ndarray, y: np.ndarray) -> float:
         """
@@ -125,4 +146,6 @@ class Perceptron(BaseEstimator):
         loss : float
             Performance under missclassification loss function
         """
-        raise NotImplementedError()
+        if self.include_intercept_:
+            X = np.insert(X, 0, np.ones(len(X)), axis=1)
+        return mis_err(y, self._predict(X))

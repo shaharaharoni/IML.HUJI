@@ -1,7 +1,4 @@
-import math
-
 from typing import Tuple
-import random
 import numpy as np
 import pandas as pd
 
@@ -35,11 +32,11 @@ def split_train_test(X: pd.DataFrame, y: pd.Series, train_proportion: float = .7
     test_y : Series of shape (floor((1-train_proportion) * n_samples), )
         Responses of test samples
     """
-    train_x = X.sample(frac=train_proportion)
-    test_x = X.drop(train_x.index)
-    train_y = y.drop(test_x.index)
-    test_y = y.drop(train_x.index)
-    return train_x, train_y, test_x, test_y
+    X = X.sample(frac=1)
+    y = y.reindex_like(X)
+    num = round(train_proportion * len(y))
+    return X[:num], y[:num], X[num:], y[num:]
+
 
 def confusion_matrix(a: np.ndarray, b: np.ndarray) -> np.ndarray:
     """
